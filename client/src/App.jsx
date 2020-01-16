@@ -1,114 +1,132 @@
-import React from 'react';
+import React, { useState, useEffect} from 'react';
 import './App.css';
 import Login from './Login';
 import Signup from './Signup';
 import axios from 'axios';
+import { GoogleLogin } from 'react-google-login'
+import {
+  BrowserRouter as Router,
+  Route,
+} from 'react-router-dom';
+import WelcomePage from './welcomePage';
 
-class App extends React.Component {
-  state = { 
-    token: '',
-    user: null,
-    errorMessage: '',
-    lockedResult: '',
+const App = () => {
+    const [ token, setToken ] = useState('')
+    const [ user, setUser ] = useState(null)
+    const [ errorMessage, setErrorMessage] = useState('')
+    const [ lockedResult, setLockedResult ] = useState('')
 
+  // handles writting data to database and recieving google data
+  const responseGoogle = (response) => {
+      axios.post('/auth/signup', {
+        name: response.profileObj.name, 
+        email: response.profileObj.email
+      }).then(res => {
+        setUser(res.data)
+      })
   }
 
-  checkForLocalToken = () => {
+  const checkForLocalToken = () => {
     // Look in local storage for token
-    let token = localStorage.getItem('mernToken');
+    let myToken = localStorage.getItem('mernToken');
+    if (myToken) {
+      setToken(myToken)
+    }
     if (!token || token === 'undefined') {
       // if no token remove all evidence of mernToken from local storage
       localStorage.removeItem('mernToken')
-      this.setState({
-        token: '',
-        user: null
-      })
+        setToken('')
+        setUser(null)
     } else {
       axios.post('/auth/me/from/token', {token})
       .then( response => {
         // if token is found, verify it on the back end
         if (response.data.type === 'error') {
           localStorage.removeItem('mernToken')
-          this.setState({
-            token: '',
-            user: null,
-            errorMessage: response.data.message
-          })
+            setToken('')
+            setUser(null)
+            setErrorMessage(response.data.message)
         } else {
           // if verified store it in local storage and state
           localStorage.setItem('mernToken', response.data.token)
-          this.setState({
-            token: response.data.token,
-            user: response.data.user
-          })
+            setToken(response.data.token)
+            setUser(response.data.user)
         }
       })
     }
   }
 
-    componentDidMount = () => {
-      this.checkForLocalToken()
-    }
+  // check to see if person is logged in or not
+  useEffect(() => {
+    checkForLocalToken()
+  }, [])
 
-    liftToken = ({token, user}) => {
-      this.setState({
-        token,
-        user
-      })
+  // method for setting the token in local storage to go through the routes
+  const liftToken = ({token, user}) => {
+      setToken(token)
+      setUser(user)
   }
 
-  logout = () => {
+  // logout
+  const logout = () => {
     localStorage.removeItem('mernToken')
-    this.setState({
-      token: '',
-      user: null
-    })
+      setToken('')
+      setUser(null)
   }
   
-  handleClick = (event) => {
+  const handleClick = (event) => {
     let config = {
       headers: {
-        Authorization: `Bearer ${this.state.token}`
+        Authorization: `Bearer ${token}`
       }
     }
     axios.get('/locked/test', config).then( response => {
-      this.setState({
-        lockedResult: response.data
-      })
+        setLockedResult(response.data)
     })
   }
 
-  render () {
-    let contents;
-    if (this.state.user) {
-      contents = (
+  var navbar;
+  if (user) {
+    navbar = (
+      <>
+          <Route exact path = '/' render={ () => <WelcomePage user={user} token={token}/> } />
+      </>
+    )
+  } else {
+    navbar = ('')
+  }
+  let contents;
+  if (user) {
+    contents = (
         <>
-          <p>Hello: {this.state.user.name}</p>
-          <button onClick={this.handleClick}>Test the protected route</button>
-          <button onClick={this.logout}>LOGOUT</button><br />
-          <p>{this.state.lockedResult}</p>
+          {navbar}
         </>
-      )
-    } else {
-      contents = (
-        <>
-          <Signup liftToken={this.liftToken} />
-          <Login liftToken={this.liftToken} />
-        </>
-      )
-    }
-
-    return (
+    )
+  } else {
+    contents = (
       <div className='app'>
-        <header>
-          <h1>Welcome to my Site!</h1>
-          <div className='content-box'>
-            {contents}
-          </div>
-        </header>
+        <div className='content-box'>
+          <h1>Authed</h1>
+          <GoogleLogin
+              clientId="801108272625-cbbc8i5j8v8s423p95mkte842cdp7d32.apps.googleusercontent.com"
+              buttonText="Login"
+              onSuccess={responseGoogle}
+              onFailure={responseGoogle}
+              cookiePolicy={'single_host_origin'}
+              className='googleLogin'
+            />
+          <Signup liftToken={liftToken} />
+          <Login liftToken={liftToken} className='login'/>
+        </div>
       </div>
     )
   }
+
+  return (
+    <Router>
+          {contents}
+    </Router>
+  )
 }
 
 export default App;

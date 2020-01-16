@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(helmet())
 
 // mongoose stuff
-mongoose.connect(process.env.MONGODB_URL, {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect(process.env.MONGODB_URI, {useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 db.once('open', () => {
     console.log(`connected to mongodb on ${db.host}:${db.port}... `)
