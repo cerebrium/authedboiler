@@ -18,7 +18,7 @@ const App = () => {
 
   // handles writting data to database and recieving google data
   const responseGoogle = (response) => {
-      axios.post('/auth/signup', {
+      axios.post('/auth/googlesignup', {
         name: response.profileObj.name, 
         email: response.profileObj.email
       }).then(res => {
@@ -73,17 +73,6 @@ const App = () => {
       setToken('')
       setUser(null)
   }
-  
-  const handleClick = (event) => {
-    let config = {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-    axios.get('/locked/test', config).then( response => {
-        setLockedResult(response.data)
-    })
-  }
 
   var navbar;
   if (user) {
@@ -106,7 +95,7 @@ const App = () => {
     contents = (
       <div className='app'>
         <div className='content-box'>
-          <h1>Authed</h1>
+          <h1>NAuth</h1>
           <GoogleLogin
               clientId="801108272625-cbbc8i5j8v8s423p95mkte842cdp7d32.apps.googleusercontent.com"
               buttonText="Login"

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const User = require('../models/user')
+const User = require('../models/user');
+const GoogleUser = require('../models/googleuser')
+
 
 router.post('/signup', (req, res) => {
     // See if the email is already in the db
@@ -35,6 +37,19 @@ router.post('/signup', (req, res) => {
                     })
                 }
             })
+        }
+    })
+});
+
+router.post('/googlesignup', (req, res) => {
+    // See if the email is already in the db
+    GoogleUser.findOne({email: req.body.email}, (err, user) => {
+        if (user) {
+            res.json(user)
+        } else {
+            let newUser = new GoogleUser
+            newUser.save()
+            res.json(newUser)
         }
     })
 });
